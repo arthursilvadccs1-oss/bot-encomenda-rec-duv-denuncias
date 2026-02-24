@@ -31,7 +31,9 @@ const {
   CATEGORY_DENUNCIAS_ID,
   RECRUIT_LOG_CHANNEL_ID,
   ROLE_VISITANTE_ID,
-  ROLE_PRE_APROVADO_ID
+  ROLE_PRE_APROVADO_ID,
+  RECRUIT_APPROVED_IMAGE_URL,
+  RECRUIT_REJECTED_IMAGE_URL
 } = process.env;
 
 if (!DISCORD_TOKEN) {
@@ -76,15 +78,15 @@ const RECRUIT_QUESTIONS = [
   { q: "ID no jogo:", type: "text" },
   { q: "Idade real:", type: "text" },
   { q: "Nivel atual no servidor:", type: "level", min: 16 },
-  { q: "Nick/usuario no Discord:", type: "text" },
-  { q: "Possui microfone funcional?", type: "choice", valid: ["sim"] },
+  { q: "Seu usuario no Discord (@):", type: "text" },
+  { q: "Tem microfone bom pra call?", type: "choice", valid: ["sim", "fechado", "to dentro"] },
   {
-    q: "Qual horario voce joga com mais frequencia?",
+    q: "Que horario voce cola mais no servidor?",
     type: "mcq",
     options: { a: "Manha", b: "Tarde", c: "Noite", d: "Madrugada" },
     correct: ["a", "b", "c", "d"]
   },
-  { q: "Descreva-se em pelo menos tres palavras:", type: "minWords", min: 3 },
+  { q: "Quais carros voce tem no servidor? (se nao tiver, fala nenhum)", type: "minWords", min: 1 },
   {
     q: "O que e RDM?",
     type: "mcq",
@@ -129,14 +131,14 @@ const RECRUIT_QUESTIONS = [
     },
     correct: ["a"]
   },
-  { q: "O que voce valoriza mais em faccao e por que?", type: "choiceText", valid: ["respeito", "lealdade", "disciplina"] },
-  { q: "Como voce reage sob pressao em acao?", type: "keywords", valid: ["calmo", "tranquilo", "comunicacao", "foco"] },
+  { q: "O que voce mais valoriza na faccao e por que?", type: "choiceText", valid: ["respeito", "lealdade", "disciplina", "familia"] },
+  { q: "Como voce reage na pressao durante acao?", type: "keywords", valid: ["calmo", "tranquilo", "comunicacao", "foco", "controle"] },
   { q: "O que diferencia a Suica das outras faccoes?", type: "minWords", min: 5 },
   { q: "Ja participou de outra faccao? Qual e como foi sua saida?", type: "minWords", min: 5 },
   { q: "Por que quer entrar na Suica?", type: "minWords", min: 6 },
   { q: "Explique como voce trabalha em equipe:", type: "minWords", min: 6 },
   { q: "Se receber uma ordem com a qual nao concorda, como age?", type: "minWords", min: 6 },
-  { q: "Esta disposto a seguir regras, hierarquia e disponibilidade?", type: "choice", valid: ["sim"] }
+  { q: "Fechou em seguir regras, hierarquia e ter disponibilidade quando precisar?", type: "choice", valid: ["sim", "fechado", "to dentro", "nasce pronto"] }
 ];
 
 /**
@@ -554,7 +556,28 @@ function countWords(str) {
   return clean.split(/\s+/).length;
 }
 
-const AFFIRMATIVE_TERMS = ["sim", "ss", "yes", "claro", "com certeza", "positivo", "pode crer", "ok", "blz", "certeza"];
+const AFFIRMATIVE_TERMS = [
+  "sim",
+  "ss",
+  "yes",
+  "claro",
+  "com certeza",
+  "positivo",
+  "pode crer",
+  "ok",
+  "blz",
+  "certeza",
+  "fechado",
+  "fechou",
+  "to dentro",
+  "tamo junto",
+  "bora",
+  "partiu",
+  "nasce pronto",
+  "prontissimo",
+  "100",
+  "100%"
+];
 const NEGATIVE_TERMS = ["nao", "não", "n", "negativo", "jamais", "nunca"];
 
 function tokenizeNormalized(str) {
@@ -620,7 +643,7 @@ function gradeRecruitment(answers) {
     switch (qObj.type) {
 
       case "text":
-        ok = answer.length >= 4 && words >= 2;
+        ok = answer.length >= 2 && words >= 1;
         reason = ok ? "resposta textual valida" : "resposta curta";
         break;
 
@@ -634,14 +657,14 @@ function gradeRecruitment(answers) {
 
       case "choiceText": {
         const validTerms = expandRecruitTerms(qObj.valid || []);
-        ok = hasAnyTerm(answer, validTerms) || (words >= 5 && hasAnyTerm(answer, hints));
+        ok = hasAnyTerm(answer, validTerms) || (words >= 4 && hasAnyTerm(answer, hints)) || words >= 6;
         reason = ok ? "linha de raciocinio compativel" : "nao demonstrou o criterio esperado";
         break;
       }
 
       case "keywords": {
         const validTerms = expandRecruitTerms([...(qObj.valid || []), ...hints]);
-        ok = hasAnyTerm(answer, validTerms) || words >= 8;
+        ok = hasAnyTerm(answer, validTerms) || words >= 6;
         reason = ok ? "identificou conceito-chave" : "faltaram conceitos-chave";
         break;
       }
@@ -690,7 +713,7 @@ function gradeRecruitment(answers) {
     });
   });
 
-  const passed = score >= 14; // 70%
+  const passed = score >= PASS_THRESHOLD; // 70%
   return { passed, score, details };
 }
 
@@ -944,7 +967,7 @@ client.on("interactionCreate", async (interaction) => {
             [
               "**Como funciona:**",
               "• Clique em **Começar Recrutamento**.",
-              "• Você terá **15 minutos** para responder **20 perguntas**.",
+              "• Você terá **10 minutos** para responder **20 perguntas**.",
               "• Responda com atenção. Respostas vazias/curtas podem reprovar.",
               "",
               "**Ao final:**",
@@ -1442,7 +1465,7 @@ client.on("interactionCreate", async (interaction) => {
         }
 
         const startedAt = Date.now();
-        const deadline = startedAt + 15 * 60 * 1000;
+        const deadline = startedAt + 10 * 60 * 1000;
 
         setSession(ch.id, {
           userId: interaction.user.id,
@@ -1454,7 +1477,7 @@ client.on("interactionCreate", async (interaction) => {
         });
 
         await interaction.reply({
-          content: "✅ **Recrutamento iniciado!** Você tem **15 minutos**.\nVou enviar a **Pergunta 1** agora.",
+          content: "✅ **Recrutamento iniciado!** Você tem **10 minutos**.\nVou enviar a **Pergunta 1** agora.",
           ephemeral: true
         });
 
@@ -1462,7 +1485,7 @@ client.on("interactionCreate", async (interaction) => {
           embeds: [
             new EmbedBuilder()
               .setColor(0x22C55E)
-              .setTitle("⏳ Cronômetro iniciado: 15 minutos")
+              .setTitle("⏳ Cronometro iniciado: 10 minutos")
               .setDescription("Responda **neste canal**. Uma pergunta por vez.")
           ]
         });
@@ -1700,7 +1723,7 @@ client.on("messageCreate", async (message) => {
           new EmbedBuilder()
             .setColor(0xEF4444)
             .setTitle("⛔ Tempo esgotado")
-            .setDescription("Você não respondeu dentro de **15 minutos**. O ticket será apagado e você pode tentar novamente.")
+            .setDescription("Você não respondeu dentro de **10 minutos**. O ticket será apagado e você pode tentar novamente.")
         ]
       });
       deleteSession(ch.id);
@@ -1784,21 +1807,24 @@ client.on("messageCreate", async (message) => {
     }
 
     if (!passed) {
-      await ch.send({
-        embeds: [
-          new EmbedBuilder()
-            .setColor(0xEF4444)
-            .setTitle("❌ Reprovado")
-            .setDescription(
-              [
-                `Sua pontuação foi **${score}/20**.`,
-                "",
-                "**Este ticket será apagado agora.**",
-                "Você pode tentar novamente para sua **segunda chance**."
-              ].join("\n")
-            )
-        ]
-      });
+      const reprovedImage = String(RECRUIT_REJECTED_IMAGE_URL || "").trim();
+      const reprovedEmbed = new EmbedBuilder()
+        .setColor(0xEF4444)
+        .setTitle("Reprovado")
+        .setDescription(
+          [
+            `Sua pontuacao foi **${score}/20**.`,
+            "",
+            "**Este ticket sera apagado agora.**",
+            "Voce pode tentar novamente para sua **segunda chance**."
+          ].join("\n")
+        );
+
+      if (/^https?:\/\/\S+/i.test(reprovedImage)) {
+        reprovedEmbed.setImage(reprovedImage);
+      }
+
+      await ch.send({ embeds: [reprovedEmbed] });
 
       // apaga ticket
       setTimeout(() => safeDeleteChannel(ch), 4000);
@@ -1830,28 +1856,33 @@ client.on("messageCreate", async (message) => {
       }
     } catch {}
 
-    await ch.send({
-      embeds: [
-        new EmbedBuilder()
-          .setColor(0x22C55E)
-          .setTitle("✅ Aprovado — Parabéns!")
-          .setDescription(
-            [
-              `Pontuação: **${score}/20**`,
-              "",
-              preRoleAdded ? "Voce recebeu o cargo **Pre-aprovado** e avancou para a **2a etapa**." : "Voce foi aprovado, mas o cargo **Pre-aprovado** nao foi aplicado automaticamente.",
-              "**Verifique sua DM** agora."
-            ].join("\n")
-          )
-      ]
-    });
+    const approvedImage = String(RECRUIT_APPROVED_IMAGE_URL || "").trim();
+    const approvedEmbed = new EmbedBuilder()
+      .setColor(0x22C55E)
+      .setTitle("Aprovado - Boa!")
+      .setDescription(
+        [
+          `Pontuacao: **${score}/20**`,
+          "",
+          preRoleAdded ? "Voce recebeu o cargo **Pre-aprovado** e avancou para a **2a etapa**." : "Voce foi aprovado, mas o cargo **Pre-aprovado** nao foi aplicado automaticamente.",
+          "Separa **500K (sujo ou limpo)** para entregar no dia e hora da entrevista.",
+          "**Verifique sua DM** agora."
+        ].join("\n")
+      );
+
+    if (/^https?:\/\/\S+/i.test(approvedImage)) {
+      approvedEmbed.setImage(approvedImage);
+    }
+
+    await ch.send({ embeds: [approvedEmbed] });
 
     await message.author.send(
       [
-        "🇨🇭 **Suíça — Recrutamento**",
+        "SUICA - Recrutamento",
         "",
-        "✅ Você foi **aprovado** na **Etapa 1**.",
-        "📩 **Próximo passo (Etapa 2):** aguarde instruções de um responsável ou siga o procedimento definido pela liderança.",
+        "Voce foi **aprovado** na **Etapa 1**.",
+        "Proximo passo (Etapa 2): aguarde instrucoes de um responsavel ou siga o procedimento da lideranca.",
+        "Separa **500K (sujo ou limpo)** para entregar no dia e hora da entrevista.",
         "",
         "Se sua DM estiver fechada, abra e avise no ticket."
       ].join("\n")
