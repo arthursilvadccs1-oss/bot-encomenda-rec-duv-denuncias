@@ -1,7 +1,13 @@
-node_modules/
 .env
+node_modules/
+.tools/
+storage.json
+src/storage.json
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+BOT-REC-ENC.zip
+.portable-git/
+.portable-git.zip
