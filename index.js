@@ -787,7 +787,7 @@ async function handleRecruitReviewDecision(interaction, decision, reviewId) {
 
   // Defer to avoid "Unknown interaction" when processing takes >3s
   if (!interaction.deferred && !interaction.replied) {
-    await interaction.deferReply({ ephemeral: true }).catch(() => {});
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral }).catch(() => {});
   }
 
   pendingRecruitReviews.delete(reviewId);
@@ -1394,7 +1394,7 @@ client.on("interactionCreate", async (interaction) => {
             { name: "Itens solicitados", value: itemLines, inline: false },
             { name: "Total do pedido", value: `**${brl(total)}**`, inline: false }
           )
-          .setFooter({ text: "Suica â€¢ Encomendas â€¢ Assumir / Marcar Pronto / Fechar" })
+          .setFooter({ text: "Suíça â€¢ Encomendas â€¢ Assumir / Marcar Pronto / Fechar" })
           .setTimestamp();
 
         const row = new ActionRowBuilder().addComponents(
@@ -1514,7 +1514,7 @@ client.on("interactionCreate", async (interaction) => {
             await user.send(
               [
                 "Seu pedido de encomenda foi marcado como **PRONTO**.",
-                `Servidor: **${interaction.guild?.name || "Suica"}**`,
+                `Servidor: **${interaction.guild?.name || "Suíça"}**`,
                 `Canal do ticket: <#${ch.id}>`,
                 "",
                 "Se precisar de ajuste, fale com a equipe de atendimento."
