@@ -133,7 +133,7 @@ const PRICE_TABLE = {
 };
 
 const MAX_DISTINCT_ITEMS = 5;
-const C4_DAILY_LIMIT = 10;
+const C4_DAILY_LIMIT = 5;
 const DEFAULT_QTY_LIMIT = 9999;
 const MENU_QTY_LIMIT = 25;
 
@@ -1155,7 +1155,7 @@ client.on("interactionCreate", async (interaction) => {
 
         const nextQty = (existingItem?.qty || 0) + order.selectedQty;
         if (order.selectedItem === "C4" && nextQty > C4_DAILY_LIMIT) {
-          return interaction.reply({ content: `C4 permite no maximo ${C4_DAILY_LIMIT} unidades por pedido.`, flags: MessageFlags.Ephemeral });
+          return interaction.reply({ content: `C4 permite no maximo ${C4_DAILY_LIMIT} unidades por dia por pessoa.`, flags: MessageFlags.Ephemeral });
         }
 
         if (existingItem) {
