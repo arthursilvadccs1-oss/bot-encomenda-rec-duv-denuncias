@@ -312,7 +312,7 @@ replaceOnce(
     "    });",
     "  }",
     "",
-    "  const summary = results.map((panel) => `${panel.label}: ${panel.messageId}`).join(\" | \"");",
+    "  const summary = results.map((panel) => panel.label + \": \" + panel.messageId).join(\" | \");",
     "  writeStorage(storage);",
     "  return { ok: true, panels: results, messageId: summary || null };",
     "}",
