@@ -1945,12 +1945,18 @@ client.on("messageCreate", async (message) => {
     };
     const embeds = buildRecruitAnswersEmbeds(reviewSession, message.author);
 
-    await logChannel.send({
-      content: `Novo recrutamento enviado por <@${message.author.id}>.`,
-      embeds,
-      components: [makeRecruitReviewButtons(reviewId)]
-    });
+    const logChannel = await client.channels.fetch(LOG_CHANNEL_ID);
 
+if (!logChannel || !logChannel.isTextBased()) {
+  console.log("Canal de log inválido:", logChannel);
+  return;
+}
+
+await logChannel.send({
+  content: `Novo recrutamento enviado por <@${message.author.id}>.`,
+  embeds,
+  components: [makeRecruitReviewButtons(reviewId)]
+});
     await ch.send({
       embeds: [
         new EmbedBuilder()
