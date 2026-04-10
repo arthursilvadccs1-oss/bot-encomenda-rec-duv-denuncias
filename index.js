@@ -1926,7 +1926,7 @@ client.on("messageCreate", async (message) => {
     }).catch(() => {});
 
     const logChannel = await message.guild.channels.fetch(RECRUIT_LOG_CHANNEL_ID).catch(() => null);
-    if (!logChannel) {
+    if (!logChannel || !logChannel.isTextBased()) {
       await ch.send("Nao encontrei o canal de logs do recrutamento. Avise a lideranca.");
       return;
     }
@@ -1945,18 +1945,11 @@ client.on("messageCreate", async (message) => {
     };
     const embeds = buildRecruitAnswersEmbeds(reviewSession, message.author);
 
-    const logChannel = await client.channels.fetch(LOG_CHANNEL_ID);
-
-if (!logChannel || !logChannel.isTextBased()) {
-  console.log("Canal de log inválido:", logChannel);
-  return;
-}
-
-await logChannel.send({
-  content: `Novo recrutamento enviado por <@${message.author.id}>.`,
-  embeds,
-  components: [makeRecruitReviewButtons(reviewId)]
-});
+    await logChannel.send({
+      content: `Novo recrutamento enviado por <@${message.author.id}>.`,
+      embeds,
+      components: [makeRecruitReviewButtons(reviewId)]
+    });
     await ch.send({
       embeds: [
         new EmbedBuilder()
